@@ -1,0 +1,204 @@
+const { useState, useEffect } = await import("react");
+const { getAuthenticatedHttpClient } = await import(
+  "@edx/frontend-platform/auth"
+);
+
+const modalStyles = {
+  overlayStyles: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  containerStyles: {
+    width: '90vw',
+    height: '90vh',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '20px',
+    overflow: 'hidden',
+  },
+  contentStyles: {
+    flex: 1,
+    overflowY: 'auto',
+  },
+  skipButton: {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    backgroundColor: '#ff5f5f',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '8px 12px',
+    cursor: 'pointer',
+    fontSize: '14px',
+  }
+};
+
+const getCookieValue = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+const isPreferedEnglish = () => {
+  const languagePreference = getCookieValue('openedx-language-preference');
+  return languagePreference === 'en';
+}
+
+
+const infoModalStyles = {
+  overlayStyles: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  containerStyles: {
+    width: '80vw',
+    maxWidth: '600px',
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    padding: '30px 20px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  contentStyles: {
+    fontSize: '16px',
+    color: '#333',
+    marginBottom: '20px',
+  },
+  okayButton: {
+    backgroundColor: '#4caf50',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '10px 20px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  }
+};
+
+const InfoPopup = ({ handleOnClick }) => {
+  return (
+    <div style={infoModalStyles.overlayStyles}>
+      <div style={infoModalStyles.containerStyles}>
+        <div style={infoModalStyles.contentStyles}>
+          {isPreferedEnglish() 
+            ? `We kindly ask you to complete this participation form. If you prefer not to fill it out now, 
+            you will have the opportunity to do so the next time you log in. Please note that it will be 
+            presented to you up to three times, with the final instance being mandatory. 
+            Thank you for your contribution! It will also enable us to get to know you better, 
+            while helping to create the learning and exchange community of the African Cities Lab!`
+            : `Nous vous demandons de bien vouloir compléter ce formulaire de participation. Si vous ne 
+            souhaitez pas y répondre maintenant, vous pourrez le faire lors de votre prochaine connexion. 
+            Notez qu’il vous sera proposé à trois reprises, et que la dernière sera obligatoire. Merci de 
+            votre contribution ! Elle nous permettra également de mieux vous connaître tout en participant à 
+            la création de la communauté d'apprentissage et d'échanges qu'est l'African Cities Lab !`
+          }
+        </div>
+        <div style={infoModalStyles.okayButton} onClick={handleOnClick}>
+          {isPreferedEnglish() ? "Okay" : "D'accord"}
+        </div>
+      </div>
+    </div> 
+  );
+};
+
+const CenteredPopup = () => {
+  const [showInfo, setShowInfo] = useState(false);
+  const [status, setStatus] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const STATUS = {
+    show: "show",
+    must_show: "must_show",
+    dont_show: "dont_show",
+  };
+  
+  const apiUrl = `${getConfig().LMS_BASE_URL}/api/`;
+
+  const handleOnSkip = () => setShowInfo(true);
+  const handleOnClick = () => setStatus(STATUS.dont_show);
+
+  const handleOnLoad = () => {
+    const updateFormLoaded = async () => {
+      try {
+        await getAuthenticatedHttpClient().post(
+          apiUrl + "status/"
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    updateFormLoaded();
+  };
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await getAuthenticatedHttpClient().get(
+          apiUrl + "status/"
+        );
+        setStatus(response.data.status);
+      } catch {
+        setStatus(STATUS.dont_show);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatus();
+  }, []);
+
+  if (loading || status === STATUS.dont_show) return <></>;
+
+  return showInfo ? 
+    <InfoPopup handleOnClick={handleOnClick}/> :
+    <div style={modalStyles.overlayStyles}>
+      <div style={modalStyles.containerStyles}>
+        {!(status === STATUS.must_show) && 
+          <div style={modalStyles.skipButton} onClick={handleOnSkip}>
+            {isPreferedEnglish() ? "Skip" : "Passer"}
+          </div>
+        }
+        <iframe
+          src={isPreferedEnglish() 
+            ? "https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_1 }}/viewform?embedded=true&usp=pp_urlusp=pp_url" 
+            : "https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_2 }}/viewform?embedded=true&usp=pp_urlusp=pp_url"
+          }
+          width="100%"
+          height="1000px"
+          frameBorder="0"
+          marginHeight="0"
+          marginWidth="0"
+          title="Google Form"
+          onLoad={handleOnLoad}
+        >
+          Loading…
+        </iframe>
+      </div>
+    </div>
+};
+
+

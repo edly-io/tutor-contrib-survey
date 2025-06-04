@@ -1,0 +1,1 @@
+RUN pip install -e "git+https://github.com/edly-io/tutor-contrib-survey.git@master#egg=survey_api&subdirectory=survey_api"
