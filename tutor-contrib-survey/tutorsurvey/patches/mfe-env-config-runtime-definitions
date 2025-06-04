@@ -1,4 +1,10 @@
-const { useState, useEffect } = await import("react");
+// Only define them if not already declared
+if (typeof useState === 'undefined' || typeof useEffect === 'undefined') {
+  const react = await import('react');
+  globalThis.useState = react.useState;
+  globalThis.useEffect = react.useEffect;
+}
+
 const { getAuthenticatedHttpClient } = await import(
   "@edx/frontend-platform/auth"
 );
@@ -36,7 +42,8 @@ const modalStyles = {
     position: 'absolute',
     top: '16px',
     right: '16px',
-    backgroundColor: '#ff5f5f',
+    backgroundColor: '#BE3712',
+    color: '#fff',
     border: 'none',
     borderRadius: '4px',
     padding: '8px 12px',
@@ -88,7 +95,7 @@ const infoModalStyles = {
     marginBottom: '20px',
   },
   okayButton: {
-    backgroundColor: '#4caf50',
+    backgroundColor: '#BE3712',
     color: '#fff',
     border: 'none',
     borderRadius: '4px',

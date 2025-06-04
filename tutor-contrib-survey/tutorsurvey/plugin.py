@@ -125,12 +125,12 @@ for path in glob(str(importlib_resources.files("tutorsurvey") / "patches" / "*")
 
 PLUGIN_SLOTS.add_item((
     "all",
-    "footer_slot",
+    "desktop_main_menu_slot",
     """
         {
             op: PLUGIN_OPERATIONS.Insert,
             widget: {
-                id: 'custom_footer',
+                id: 'custom_header',
                 type: DIRECT_PLUGIN,
                 RenderWidget: () => <CenteredPopup />
             }
