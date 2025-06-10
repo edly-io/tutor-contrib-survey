@@ -13,7 +13,7 @@ class SurveyStatusView(APIView):
     def get(self, request):
         survey, _ = SurveyModel.objects.get_or_create(user=request.user)
         return Response(
-            {"status": survey.status},
+            {"status": survey.status, "count": survey.times_shown},
             status=status.HTTP_200_OK
         )
 
