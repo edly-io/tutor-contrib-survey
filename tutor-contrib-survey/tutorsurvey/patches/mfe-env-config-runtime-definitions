@@ -38,7 +38,7 @@ const modalStyles = {
     flex: 1,
     overflowY: 'auto',
   },
-  skipButton: {
+  closeButton: {
     position: 'absolute',
     top: '16px',
     right: '16px',
@@ -49,6 +49,15 @@ const modalStyles = {
     padding: '8px 12px',
     cursor: 'pointer',
     fontSize: '14px',
+  },
+  warning: {
+    position: 'absolute',
+    top: '60px',
+    right: '16px',
+    color: '#ff9781 ',
+    fontSize: '12px',
+    width: '15%',
+    textAlign: 'right', 
   }
 };
 
@@ -63,78 +72,10 @@ const isPreferedEnglish = () => {
   return languagePreference === 'en';
 }
 
-
-const infoModalStyles = {
-  overlayStyles: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100vw',
-    height: '100vh',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  containerStyles: {
-    width: '80vw',
-    maxWidth: '600px',
-    backgroundColor: '#fff',
-    borderRadius: '10px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    padding: '30px 20px',
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  contentStyles: {
-    fontSize: '16px',
-    color: '#333',
-    marginBottom: '20px',
-  },
-  okayButton: {
-    backgroundColor: '#BE3712',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '10px 20px',
-    cursor: 'pointer',
-    fontSize: '16px',
-  }
-};
-
-const InfoPopup = ({ handleOnClick }) => {
-  return (
-    <div style={infoModalStyles.overlayStyles}>
-      <div style={infoModalStyles.containerStyles}>
-        <div style={infoModalStyles.contentStyles}>
-          {isPreferedEnglish() 
-            ? `We kindly ask you to complete this participation form. If you prefer not to fill it out now, 
-            you will have the opportunity to do so the next time you log in. Please note that it will be 
-            presented to you up to three times, with the final instance being mandatory. 
-            Thank you for your contribution! It will also enable us to get to know you better, 
-            while helping to create the learning and exchange community of the African Cities Lab!`
-            : `Nous vous demandons de bien vouloir compléter ce formulaire de participation. Si vous ne 
-            souhaitez pas y répondre maintenant, vous pourrez le faire lors de votre prochaine connexion. 
-            Notez qu’il vous sera proposé à trois reprises, et que la dernière sera obligatoire. Merci de 
-            votre contribution ! Elle nous permettra également de mieux vous connaître tout en participant à 
-            la création de la communauté d'apprentissage et d'échanges qu'est l'African Cities Lab !`
-          }
-        </div>
-        <div style={infoModalStyles.okayButton} onClick={handleOnClick}>
-          {isPreferedEnglish() ? "Okay" : "D'accord"}
-        </div>
-      </div>
-    </div> 
-  );
-};
-
 const CenteredPopup = () => {
-  const [showInfo, setShowInfo] = useState(false);
   const [status, setStatus] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [count, setCount] = useState(false);
 
   const STATUS = {
     show: "show",
@@ -144,8 +85,28 @@ const CenteredPopup = () => {
   
   const apiUrl = `${getConfig().LMS_BASE_URL}/api/`;
 
-  const handleOnSkip = () => setShowInfo(true);
-  const handleOnClick = () => setStatus(STATUS.dont_show);
+  const handleOnSkip = () => {
+    const fetchStatus = async () => {
+      try {
+        const response = await getAuthenticatedHttpClient().get(
+          apiUrl + "status/"
+        );
+        const APIStatus = response.data.status;
+        if (APIStatus === STATUS.show || APIStatus === STATUS.dont_show){
+          setStatus(STATUS.dont_show);
+        } else {
+          setStatus(STATUS.must_show);
+        }
+      } catch {
+        setStatus(STATUS.dont_show);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatus();
+  }
+
 
   const handleOnLoad = () => {
     const updateFormLoaded = async () => {
@@ -161,6 +122,16 @@ const CenteredPopup = () => {
     updateFormLoaded();
   };
 
+  const warningText = () => {
+    let text = "";
+    if (count >= 2) {
+      text = isPreferedEnglish() ? "You must submit this form now then press the Close button to close it." : "Vous devez soumettre ce formulaire maintenant, puis appuyer sur le bouton Fermer pour le fermer.";
+    } else {
+      text = isPreferedEnglish() ? `You can skip filling this form ${2 - count} more time(s)` : `Vous pouvez ignorer le remplissage de ce formulaire ${2 - count} fois de plus`;
+    }
+    return text;
+  };
+
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -168,6 +139,7 @@ const CenteredPopup = () => {
           apiUrl + "status/"
         );
         setStatus(response.data.status);
+        setCount(response.data.count);
       } catch {
         setStatus(STATUS.dont_show);
       } finally {
@@ -180,15 +152,15 @@ const CenteredPopup = () => {
 
   if (loading || status === STATUS.dont_show) return <></>;
 
-  return showInfo ? 
-    <InfoPopup handleOnClick={handleOnClick}/> :
+  return ( 
     <div style={modalStyles.overlayStyles}>
       <div style={modalStyles.containerStyles}>
-        {!(status === STATUS.must_show) && 
-          <div style={modalStyles.skipButton} onClick={handleOnSkip}>
-            {isPreferedEnglish() ? "Skip" : "Passer"}
-          </div>
-        }
+        <div style={modalStyles.closeButton} onClick={handleOnSkip}>
+          {isPreferedEnglish() ? "Close" : "Fermer"}
+        </div>
+        <div style={modalStyles.warning}>
+            {warningText()}
+        </div>
         <iframe
           src={isPreferedEnglish() 
             ? "https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_1 }}/viewform?embedded=true&usp=pp_urlusp=pp_url" 
@@ -206,6 +178,7 @@ const CenteredPopup = () => {
         </iframe>
       </div>
     </div>
+    )
 };
 
 
