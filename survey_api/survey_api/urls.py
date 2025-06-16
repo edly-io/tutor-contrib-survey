@@ -4,7 +4,7 @@ URLs for survey_api.
 from django.urls import re_path  # pylint: disable=unused-import
 from django.views.generic import TemplateView  # pylint: disable=unused-import
 
-from .views import SurveyCompletedView, SurveyStatusView
+from .views import SurveyCompletedView, SurveyStatusView, FormResponses
 
 urlpatterns = [
     # TODO: Fill in URL patterns and views here.
@@ -13,4 +13,6 @@ urlpatterns = [
 
     # POST → marks the survey as completed and returns new status
     re_path(r'^api/completed/?$', SurveyCompletedView.as_view(), name='survey-completed'),
+
+    re_path(r'^api/responses/?$', FormResponses.as_view(), name='form-responses'),
 ]
