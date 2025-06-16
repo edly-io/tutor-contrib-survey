@@ -1,14 +1,12 @@
 import os
 from glob import glob
 
-import click
 import importlib_resources
+from tutormfe.hooks import MFE_APPS, PLUGIN_SLOTS
+
 from tutor import hooks
 
-from tutormfe.hooks import PLUGIN_SLOTS, MFE_APPS
-
 from .__about__ import __version__
-
 
 ########################################
 # CONFIGURATION
@@ -25,17 +23,9 @@ hooks.Filters.CONFIG_DEFAULTS.add_items(
     ]
 )
 
-hooks.Filters.CONFIG_UNIQUE.add_items(
-    [
-        
-    ]
-)
+hooks.Filters.CONFIG_UNIQUE.add_items([])
 
-hooks.Filters.CONFIG_OVERRIDES.add_items(
-    [
-        
-    ]
-)
+hooks.Filters.CONFIG_OVERRIDES.add_items([])
 
 
 ########################################
@@ -70,31 +60,19 @@ for service, template_path in MY_INIT_TASKS:
 # Images to be built by `tutor images build`.
 # Each item is a quadruple in the form:
 #     ("<tutor_image_name>", ("path", "to", "build", "dir"), "<docker_image_tag>", "<build_args>")
-hooks.Filters.IMAGES_BUILD.add_items(
-    [
-
-    ]
-)
+hooks.Filters.IMAGES_BUILD.add_items([])
 
 
 # Images to be pulled as part of `tutor images pull`.
 # Each item is a pair in the form:
 #     ("<tutor_image_name>", "<docker_image_tag>")
-hooks.Filters.IMAGES_PULL.add_items(
-    [
-        
-    ]
-)
+hooks.Filters.IMAGES_PULL.add_items([])
 
 
 # Images to be pushed as part of `tutor images push`.
 # Each item is a pair in the form:
 #     ("<tutor_image_name>", "<docker_image_tag>")
-hooks.Filters.IMAGES_PUSH.add_items(
-    [
-        
-    ]
-)
+hooks.Filters.IMAGES_PUSH.add_items([])
 
 hooks.Filters.ENV_TEMPLATE_ROOTS.add_items(
     # Root paths for template files, relative to the project root.
@@ -123,10 +101,11 @@ for path in glob(str(importlib_resources.files("tutorsurvey") / "patches" / "*")
         hooks.Filters.ENV_PATCHES.add_item((os.path.basename(path), patch_file.read()))
 
 
-PLUGIN_SLOTS.add_item((
-    "all",
-    "desktop_main_menu_slot",
-    """
+PLUGIN_SLOTS.add_item(
+    (
+        "learning",
+        "desktop_main_menu_slot",
+        """
         {
             op: PLUGIN_OPERATIONS.Insert,
             widget: {
@@ -135,8 +114,77 @@ PLUGIN_SLOTS.add_item((
                 RenderWidget: () => <CenteredPopup />
             }
         }
-    """
-))
+    """,
+    )
+)
+
+PLUGIN_SLOTS.add_item(
+    (
+        "learner-dashboard",
+        "desktop_main_menu_slot",
+        """
+        {
+            op: PLUGIN_OPERATIONS.Insert,
+            widget: {
+                id: 'custom_header',
+                type: DIRECT_PLUGIN,
+                RenderWidget: () => <CenteredPopup />
+            }
+        }
+    """,
+    )
+)
+
+PLUGIN_SLOTS.add_item(
+    (
+        "profile",
+        "desktop_main_menu_slot",
+        """
+        {
+            op: PLUGIN_OPERATIONS.Insert,
+            widget: {
+                id: 'custom_header',
+                type: DIRECT_PLUGIN,
+                RenderWidget: () => <CenteredPopup />
+            }
+        }
+    """,
+    )
+)
+
+PLUGIN_SLOTS.add_item(
+    (
+        "discussions",
+        "desktop_main_menu_slot",
+        """
+        {
+            op: PLUGIN_OPERATIONS.Insert,
+            widget: {
+                id: 'custom_header',
+                type: DIRECT_PLUGIN,
+                RenderWidget: () => <CenteredPopup />
+            }
+        }
+    """,
+    )
+)
+
+PLUGIN_SLOTS.add_item(
+    (
+        "account",
+        "desktop_main_menu_slot",
+        """
+        {
+            op: PLUGIN_OPERATIONS.Insert,
+            widget: {
+                id: 'custom_header',
+                type: DIRECT_PLUGIN,
+                RenderWidget: () => <CenteredPopup />
+            }
+        }
+    """,
+    )
+)
 
 
 @MFE_APPS.add()
@@ -144,6 +192,6 @@ def _add_my_mfe(mfes):
     mfes["survey"] = {
         "repository": "https://github.com/edly-io/frontend-app-survey.git",
         "port": 2011,
-        "version": "master", 
+        "version": "master",
     }
     return mfes

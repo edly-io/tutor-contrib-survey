@@ -63,3 +63,7 @@ docs/survey_api.*.rst
 # Private requirements
 requirements/private.in
 requirements/private.txt
+
+# Google API credentials
+epfl-survey-0a4f10725356.json
+
