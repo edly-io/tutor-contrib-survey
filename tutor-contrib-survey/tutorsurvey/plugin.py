@@ -20,6 +20,7 @@ hooks.Filters.CONFIG_DEFAULTS.add_items(
         # Each new setting is a pair: (setting_name, default_value).
         # Prefix your setting names with 'SURVEY_'.
         ("SURVEY_VERSION", __version__),
+        ("SERVICE_ACCOUNT_INFO", {}),
     ]
 )
 

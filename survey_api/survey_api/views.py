@@ -1,6 +1,5 @@
-import os
-
 import requests
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -61,12 +60,9 @@ class FormResponses(APIView):
             "profile",
             "email",
         ]
-        SERVICE_ACCOUNT_FILE = os.path.join(
-            os.path.dirname(__file__), "epfl-survey-0a4f10725356.json"
-        )
 
-        credentials = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        credentials = service_account.Credentials.from_service_account_info(
+            settings.SERVICE_ACCOUNT_INFO, scopes=SCOPES
         )
 
         credentials.refresh(Request())
