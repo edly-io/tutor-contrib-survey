@@ -14,5 +14,5 @@ urlpatterns = [
     # POST → marks the survey as completed and returns new status
     re_path(r'^api/completed/?$', SurveyCompletedView.as_view(), name='survey-completed'),
 
-    re_path(r'^api/responses/?$', FormResponses.as_view(), name='form-responses'),
+    re_path(r'^api/responses/q', FormResponses.as_view(), name='form-responses'),
 ]
