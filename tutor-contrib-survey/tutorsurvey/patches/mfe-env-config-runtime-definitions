@@ -75,7 +75,8 @@ const isPreferedEnglish = () => {
 const CenteredPopup = () => {
   const [status, setStatus] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [count, setCount] = useState(false);
+  const [count, setCount] = useState(0);
+  const [email, setEmail] = useState('');
 
   const STATUS = {
     show: "show",
@@ -140,6 +141,7 @@ const CenteredPopup = () => {
         );
         setStatus(response.data.status);
         setCount(response.data.count);
+        setEmail(response.data.email);
       } catch {
         setStatus(STATUS.dont_show);
       } finally {
@@ -163,8 +165,8 @@ const CenteredPopup = () => {
         </div>
         <iframe
           src={isPreferedEnglish() 
-            ? "https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_1 }}/viewform?embedded=true&usp=pp_urlusp=pp_url" 
-            : "https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_2 }}/viewform?embedded=true&usp=pp_urlusp=pp_url"
+            ? `https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_1 }}/viewform?embedded=true&usp=pp_urlusp=pp_url&entry.405262843=${email}` 
+            : `https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_2 }}/viewform?embedded=true&usp=pp_urlusp=pp_url&entry.405262843=${email}`
           }
           width="100%"
           height="1000px"
