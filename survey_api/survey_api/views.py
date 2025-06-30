@@ -76,8 +76,8 @@ class FormResponses(APIView):
 
         headers = {"Authorization": f"Bearer {token}"}
 
-        ID_ENGLISH_FORM = "14MuRMvwkwu2g3tFH3KGcAa9fR_3rCf3RfDRKTZ9MyiA"
-        ID_FRENCH_FORM = "17Mpxpp44GW4VPEXK0qLZcVLYc5Ikm_vNuipTMPngHxc"
+        ID_ENGLISH_FORM = "1MXaneZl67ofajuD9CuEhABtW-xzuWOw-uYfxGLyZ3dA"
+        ID_FRENCH_FORM = "1xjY3XCawFdY5L_NcU4L7HCuDtwaizGg3fIbF8fVlThQ"
 
         url_en_base = f"https://forms.googleapis.com/v1/forms/{ID_ENGLISH_FORM}"
         url_fr_base = f"https://forms.googleapis.com/v1/forms/{ID_FRENCH_FORM}"

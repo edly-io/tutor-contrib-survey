@@ -102,22 +102,6 @@ for path in glob(str(importlib_resources.files("tutorsurvey") / "patches" / "*")
         hooks.Filters.ENV_PATCHES.add_item((os.path.basename(path), patch_file.read()))
 
 
-PLUGIN_SLOTS.add_item(
-    (
-        "learning",
-        "desktop_main_menu_slot",
-        """
-        {
-            op: PLUGIN_OPERATIONS.Insert,
-            widget: {
-                id: 'custom_header',
-                type: DIRECT_PLUGIN,
-                RenderWidget: () => <CenteredPopup />
-            }
-        }
-    """,
-    )
-)
 
 PLUGIN_SLOTS.add_item(
     (
@@ -136,56 +120,6 @@ PLUGIN_SLOTS.add_item(
     )
 )
 
-PLUGIN_SLOTS.add_item(
-    (
-        "profile",
-        "desktop_main_menu_slot",
-        """
-        {
-            op: PLUGIN_OPERATIONS.Insert,
-            widget: {
-                id: 'custom_header',
-                type: DIRECT_PLUGIN,
-                RenderWidget: () => <CenteredPopup />
-            }
-        }
-    """,
-    )
-)
-
-PLUGIN_SLOTS.add_item(
-    (
-        "discussions",
-        "desktop_main_menu_slot",
-        """
-        {
-            op: PLUGIN_OPERATIONS.Insert,
-            widget: {
-                id: 'custom_header',
-                type: DIRECT_PLUGIN,
-                RenderWidget: () => <CenteredPopup />
-            }
-        }
-    """,
-    )
-)
-
-PLUGIN_SLOTS.add_item(
-    (
-        "account",
-        "desktop_main_menu_slot",
-        """
-        {
-            op: PLUGIN_OPERATIONS.Insert,
-            widget: {
-                id: 'custom_header',
-                type: DIRECT_PLUGIN,
-                RenderWidget: () => <CenteredPopup />
-            }
-        }
-    """,
-    )
-)
 
 
 @MFE_APPS.add()
