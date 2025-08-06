@@ -1,17 +1,56 @@
 import requests
+
 from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
+
 from rest_framework import status
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import SurveyModel
+from acl_extra_reg_fields.models import ExtraInfo
 
+from .models import SurveyModel, GoogleFormResponseModel, CourseFeedbackModel
+
+def get_access_token():
+    SCOPES = [
+        "https://www.googleapis.com/auth/forms.responses.readonly",
+        "https://www.googleapis.com/auth/forms.body.readonly",
+        "https://www.googleapis.com/auth/drive.file",
+        "https://www.googleapis.com/auth/drive",
+        "openid",
+        "profile",
+        "email",
+    ]
+
+    credentials = service_account.Credentials.from_service_account_info(
+        settings.SERVICE_ACCOUNT_INFO, scopes=SCOPES
+    )
+
+    credentials.refresh(Request())
+    return credentials.token
+
+class DashboardInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        users = list(User.objects.values('id', 'username', 'email'))
+        feedback_forms = [
+            {
+                'id': feedback.id,
+                'form_id': feedback.form_id,
+                'course': str(feedback.course),
+            }
+            for feedback in CourseFeedbackModel.objects.select_related('course').all()
+        ]
+
+        return JsonResponse({ "users": users, "feedback_forms": feedback_forms })
 
 class SurveyStatusView(APIView):
     permission_classes = [IsAuthenticated]
@@ -52,25 +91,9 @@ class SurveyCompletedView(APIView):
 class FormResponses(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
-    def get_access_token(self):
-        SCOPES = [
-            "https://www.googleapis.com/auth/forms.responses.readonly",
-            "https://www.googleapis.com/auth/forms.body.readonly",
-            "openid",
-            "profile",
-            "email",
-        ]
-
-        credentials = service_account.Credentials.from_service_account_info(
-            settings.SERVICE_ACCOUNT_INFO, scopes=SCOPES
-        )
-
-        credentials.refresh(Request())
-        return credentials.token
-
     def get(self, request):
         try:
-            token = self.get_access_token()
+            token = get_access_token()
         except Exception as e:
             return JsonResponse({"error": f"Token error: {str(e)}"}, status=500)
 
@@ -175,3 +198,186 @@ class FormResponses(APIView):
 
         except requests.exceptions.RequestException as e:
             return JsonResponse({"error": f"API error: {str(e)}"}, status=500)
+
+
+class GoogleFormResponseView(APIView):
+    permission_classes = [AllowAny]  
+
+    def post(self, request):
+        email       = request.data.get('email')
+        form_id     = request.data.get('form_id')
+        response_id = request.data.get('response_id')
+
+        if not all([email, form_id, response_id]):
+            return Response(
+                {"detail": "Missing one of: email, form_id, response_id."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": f"No user found with email '{email}'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            resp = GoogleFormResponseModel.objects.create(
+                user=user,
+                form_id=form_id,
+                response_id=response_id,
+                submitted_at=timezone.now()
+            )
+        except:
+            return Response(
+                {"detail": "That form_id/response_id pair already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "id":           resp.pk,
+                "user_email":   user.email,
+                "form_id":      resp.form_id,
+                "response_id":  resp.response_id,
+                "submitted_at": resp.submitted_at,
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+
+class RegistrationResponsesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_items(self):
+        lang_options = [
+            {"value": label, "label": label}
+            for _, label in ExtraInfo.LANGUAGES
+        ]
+        ref_options = [
+            {"value": label, "label": label}
+            for _, label in ExtraInfo.SOCIAL_NETWORKS
+        ]
+
+        return [
+            {
+                "itemId": "username",
+                "title": "Username",
+                "questionItem": {
+                    "question": {
+                        "questionId": "username",
+                        "textQuestion": {}
+                    }
+                }
+            },
+            {
+                "itemId": "email",
+                "title": "Email",
+                "questionItem": {
+                    "question": {
+                        "questionId": "email",
+                        "textQuestion": {}
+                    }
+                }
+            },
+            {
+                "itemId": "preferred_language",
+                "title": "Preferred Language",
+                "questionItem": {
+                    "question": {
+                        "questionId": "preferred_language",
+                        "choiceQuestion": {
+                            "type": "RADIO",
+                            "options": lang_options
+                        }
+                    }
+                }
+            },
+            {
+                "itemId": "referrer",
+                "title": "How did you hear about the platform?",
+                "questionItem": {
+                    "question": {
+                        "questionId": "referrer",
+                        "choiceQuestion": {
+                            "type": "RADIO",
+                            "options": ref_options
+                        }
+                    }
+                }
+            },
+        ]
+
+    def get_responses(self):
+        qs = ExtraInfo.objects.all()
+        out = []
+        for info in qs:
+            out.append({
+                "responseId": str(info.pk),
+                "answers": {
+                    "username": {
+                        "questionId": "username",
+                        "textAnswers": {"answers": [{"value": info.user.username}]}
+                    },
+                    "email": {
+                        "questionId": "email",
+                        "textAnswers": {"answers": [{"value": info.user.email}]}
+                    },
+                    "preferred_language": {
+                        "questionId": "preferred_language",
+                        "textAnswers": {
+                            "answers": [{"value": info.get_preferred_language_display()}]
+                        }
+                    },
+                    "referrer": {
+                        "questionId": "referrer",
+                        "textAnswers": {
+                            "answers": [{"value": info.get_referrer_display()}]
+                        }
+                    }
+                }
+            })
+        return out
+
+    def get(self, request):
+        return Response({
+            "meta": {"items": self.get_items()},
+            "responses": self.get_responses(),
+        })
+    
+
+class CourseResponseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        form_id = request.query_params.get('form_id')
+        
+        try:
+            token = get_access_token()
+        except Exception as e:
+            return JsonResponse({"error": f"Token error: {str(e)}"}, status=500)
+
+        url_base = f"https://forms.googleapis.com/v1/forms/{form_id}"
+        url_responses = f"https://forms.googleapis.com/v1/forms/{form_id}/responses"
+
+        headers = {"Authorization": f"Bearer {token}"}
+
+        try: 
+            meta = requests.get(url_base, headers=headers)
+            meta.raise_for_status()
+            meta = meta.json()
+
+            responses = requests.get(url_responses, headers=headers)
+            responses.raise_for_status()
+            responses = responses.json()
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": f"API error: {str(e)}"}, status=500)
+        
+        print(responses['responses'])
+
+        return JsonResponse({
+            "meta": meta,
+            "responses": responses['responses']
+        })
