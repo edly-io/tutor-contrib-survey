@@ -1,10 +1,12 @@
 import requests
+from requests.exceptions import RequestException
 
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
@@ -374,10 +376,237 @@ class CourseResponseView(APIView):
 
         except requests.exceptions.RequestException as e:
             return JsonResponse({"error": f"API error: {str(e)}"}, status=500)
-        
-        print(responses['responses'])
-
         return JsonResponse({
             "meta": meta,
             "responses": responses['responses']
         })
+    
+
+
+class UserRegistrationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_items(self):
+        return RegistrationResponsesView().get_items()
+
+    def get_responses(self, username):
+        try:
+            user = get_object_or_404(User, username=username)
+            info = ExtraInfo.objects.select_related('user').get(user=user)
+        except ExtraInfo.DoesNotExist:
+            return []
+
+        return [{
+            "responseId": str(info.pk),
+            "answers": {
+                "username": {
+                    "questionId": "username",
+                    "textAnswers": {"answers": [{"value": info.user.username}]}
+                },
+                "email": {
+                    "questionId": "email",
+                    "textAnswers": {"answers": [{"value": info.user.email}]}
+                },
+                "preferred_language": {
+                    "questionId": "preferred_language",
+                    "textAnswers": {
+                        "answers": [{"value": info.get_preferred_language_display()}]
+                    }
+                },
+                "referrer": {
+                    "questionId": "referrer",
+                    "textAnswers": {
+                        "answers": [{"value": info.get_referrer_display()}]
+                    }
+                }
+            }
+        }]
+
+    def get(self, request):
+
+        username = request.query_params.get('username')
+
+        responses = self.get_responses(username)
+        if not responses:
+            return Response({
+                "meta": {"items": []},
+                "responses": []
+            })
+
+        return Response({
+            "meta": {"items": self.get_items()},
+            "responses": responses
+        })
+
+
+class UserCourseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        form_id = request.query_params.get('form_id')
+        username = request.query_params.get('username')
+
+        user = get_object_or_404(User, username=username)
+
+        try:
+            submission = GoogleFormResponseModel.objects.get(form_id=form_id, user=user)
+        except ObjectDoesNotExist:
+            submission = None
+
+        if not submission: 
+            return JsonResponse({
+                "meta": {"items": []},
+                "responses": []
+            })
+
+        try:
+            token = get_access_token()
+        except Exception as e:
+            return JsonResponse({"error": f"Token error: {str(e)}"}, status=500)
+
+        url_base = f"https://forms.googleapis.com/v1/forms/{form_id}"
+        url_responses = f"https://forms.googleapis.com/v1/forms/{form_id}/responses/{submission.response_id}"
+
+        headers = {"Authorization": f"Bearer {token}"}        
+
+        try: 
+            meta = requests.get(url_base, headers=headers)
+            meta.raise_for_status()
+            meta = meta.json()
+
+            responses = requests.get(url_responses, headers=headers)
+            responses.raise_for_status()
+            responses = responses.json()
+
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({"error": f"API error: {str(e)}"}, status=500)
+        
+        return JsonResponse({
+            "meta": meta,
+            "responses": [responses]
+        })
+    
+
+class UserOnboardingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    ID_ENGLISH_FORM = "1MXaneZl67ofajuD9CuEhABtW-xzuWOw-uYfxGLyZ3dA"
+    ID_FRENCH_FORM = "1xjY3XCawFdY5L_NcU4L7HCuDtwaizGg3fIbF8fVlThQ"
+
+    def get(self, request):
+        email = request.query_params.get('email')
+
+        try:
+            token = get_access_token()
+        except Exception as e:
+            return JsonResponse({"error": f"Token error: {str(e)}"}, status=500)
+        
+        headers = {"Authorization": f"Bearer {token}"}        
+
+        def get_form_responses(form_id, headers):
+            """
+            Fetch form metadata and all responses from Google Forms API.
+            Raises RuntimeError on any network/HTTP failure.
+            """
+            base_url = f"https://forms.googleapis.com/v1/forms/{form_id}"
+            try:
+                # Metadata (to find question IDs)
+                resp_meta = requests.get(base_url, headers=headers)
+                resp_meta.raise_for_status()
+                meta = resp_meta.json()
+
+                # All responses
+                resp_data = requests.get(f"{base_url}/responses", headers=headers)
+                resp_data.raise_for_status()
+                responses = resp_data.json().get("responses", [])
+
+                return meta, responses
+
+            except RequestException as e:
+                raise RuntimeError(f"Google Forms API request failed for form {form_id}: {e}")
+            
+        def find_email_question_id(form_meta, email_field_titles):
+            """
+            Scan form metadata for any item whose title matches one of
+            email_field_titles, and return its questionId.
+            """
+            for item in form_meta.get("items", []):
+                title = item.get("title", "").strip()
+                q = item.get("questionItem", {}).get("question", {})
+                qid = q.get("questionId")
+                if title in email_field_titles and qid:
+                    return qid
+            return None
+        
+        def find_response_by_email(responses, email_qid, email_to_find):
+            """
+            Look through each response's answers[email_qid] for a match
+            against email_to_find. Supports both textAnswers and emailAnswer.
+            Returns the first matching response dict, or None.
+            """
+            for resp in responses:
+                ans = resp.get("answers", {}).get(email_qid)
+                if not ans:
+                    continue
+
+                # Try textAnswers → list of {"value": "..."}
+                if "textAnswers" in ans:
+                    for a in ans["textAnswers"].get("answers", []):
+                        if a.get("value", "").strip().lower() == email_to_find.lower():
+                            return resp
+
+                # Fallback to emailAnswer → {"email": "..."}
+                if "emailAnswer" in ans:
+                    if ans["emailAnswer"].get("email", "").strip().lower() == email_to_find.lower():
+                        return resp
+
+            return None
+
+        try:
+            meta_en, responses_en = get_form_responses(self.ID_ENGLISH_FORM, headers)
+            meta_fr, responses_fr = get_form_responses(self.ID_FRENCH_FORM, headers)
+        except RuntimeError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+        
+        qid_en = find_email_question_id(meta_en, {"Email address"})
+        qid_fr = find_email_question_id(meta_fr, {"Adresse e-mail"})
+
+        if not qid_en and not qid_fr:
+            return Response(
+                {"error": "Could not locate an email question in either form."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+        try:
+            match = None
+            match_meta = None
+            if qid_en:
+                match = find_response_by_email(responses_en, qid_en, email)
+                if match:
+                    match_meta = meta_en
+            if qid_fr and match is None:
+                match = find_response_by_email(responses_fr, qid_fr, email)
+                if match:
+                    match_meta = meta_fr
+
+        except Exception as e:
+            return Response(
+                {"error": f"Error scanning form responses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+
+        if match:
+            return JsonResponse({
+                "meta": match_meta,
+                "responses": [match]
+            })
+        else:
+            return JsonResponse({
+                "meta": {"items": []},
+                "responses": []
+            })
