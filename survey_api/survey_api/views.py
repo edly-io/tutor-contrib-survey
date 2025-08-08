@@ -284,6 +284,16 @@ class RegistrationResponsesView(APIView):
                 }
             },
             {
+                "itemId": "date_joined",
+                "title": "Date Joined",
+                "questionItem": {
+                    "question": {
+                        "questionId": "lastSubmittedTime",
+                        "textQuestion": {}
+                    }
+                }
+            },
+            {
                 "itemId": "preferred_language",
                 "title": "Preferred Language",
                 "questionItem": {
@@ -325,6 +335,10 @@ class RegistrationResponsesView(APIView):
                     "email": {
                         "questionId": "email",
                         "textAnswers": {"answers": [{"value": info.user.email}]}
+                    },
+                    "lastSubmittedTime": {
+                        "questionId": "lastSubmittedTime",
+                        "textAnswers": {"answers": [{"value": info.user.date_joined}]}
                     },
                     "preferred_language": {
                         "questionId": "preferred_language",
@@ -406,6 +420,10 @@ class UserRegistrationView(APIView):
                 "email": {
                     "questionId": "email",
                     "textAnswers": {"answers": [{"value": info.user.email}]}
+                },
+                "lastSubmittedTime": {
+                    "questionId": "lastSubmittedTime",
+                    "textAnswers": {"answers": [{"value": info.user.date_joined}]}
                 },
                 "preferred_language": {
                     "questionId": "preferred_language",
