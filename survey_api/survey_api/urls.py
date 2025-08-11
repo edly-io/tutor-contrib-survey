@@ -4,12 +4,13 @@ URLs for survey_api.
 from django.urls import re_path  # pylint: disable=unused-import
 from django.views.generic import TemplateView  # pylint: disable=unused-import
 
-from .views import DashboardInfoView, SurveyCompletedView, SurveyStatusView, FormResponses, RegistrationResponsesView, GoogleFormResponseView, CourseResponseView, UserRegistrationView, UserCourseView, UserOnboardingView
+from .views import PermissionsAccessView, DashboardInfoView, SurveyCompletedView, SurveyStatusView, FormResponses, RegistrationResponsesView, GoogleFormResponseView, CourseResponseView, UserRegistrationView, UserCourseView, UserOnboardingView
 
 urlpatterns = [
     # TODO: Fill in URL patterns and views here.
     # re_path(r'', TemplateView.as_view(template_name="survey_api/base.html")),
     re_path(r'^api/status/?$', SurveyStatusView.as_view(), name='survey-status'),
+    re_path(r'^api/allowed/?$', PermissionsAccessView.as_view(), name='allowed'),
 
     re_path(r'^api/dashboard/?$', DashboardInfoView.as_view(), name='dashboard'),
 

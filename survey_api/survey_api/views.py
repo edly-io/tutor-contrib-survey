@@ -38,6 +38,13 @@ def get_access_token():
     credentials.refresh(Request())
     return credentials.token
 
+class PermissionsAccessView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"is_allowed": bool(request.user.is_superuser)})
+
+
 class DashboardInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -47,7 +54,7 @@ class DashboardInfoView(APIView):
             {
                 'id': feedback.id,
                 'form_id': feedback.form_id,
-                'course': str(feedback.course),
+                'course': feedback.course.display_name,
             }
             for feedback in CourseFeedbackModel.objects.select_related('course').all()
         ]
