@@ -11,6 +11,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 
+from common.djangoapps.student.models.user import UserProfile
+
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -268,8 +270,22 @@ class RegistrationResponsesView(APIView):
             {"value": label, "label": label}
             for _, label in ExtraInfo.SOCIAL_NETWORKS
         ]
+        gender_options = [
+            {"value": label, "label": label}
+            for _, label in UserProfile.GENDER_CHOICES
+        ]
 
         return [
+            {
+                "itemId": "name",
+                "title": "Name",
+                "questionItem": {
+                    "question": {
+                        "questionId": "name",
+                        "textQuestion": {}
+                    }
+                }
+            },
             {
                 "itemId": "username",
                 "title": "Username",
@@ -297,6 +313,29 @@ class RegistrationResponsesView(APIView):
                     "question": {
                         "questionId": "lastSubmittedTime",
                         "textQuestion": {}
+                    }
+                }
+            },
+            {
+                "itemId": "year_of_birth",
+                "title": "Year of birth",
+                "questionItem": {
+                    "question": {
+                        "questionId": "yearOfBirth",
+                        "textQuestion": {}
+                    }
+                }
+            },
+            {
+                "itemId": "gender",
+                "title": "Gender",
+                "questionItem": {
+                    "question": {
+                        "questionId": "gender",
+                        "choiceQuestion": {
+                            "type": "RADIO",
+                            "options": gender_options
+                        }
                     }
                 }
             },
@@ -335,6 +374,10 @@ class RegistrationResponsesView(APIView):
             out.append({
                 "responseId": str(info.pk),
                 "answers": {
+                    "name": {
+                        "questionId": "name",
+                        "textAnswers": {"answers": [{"value": info.user.profile.name}]}
+                    },
                     "username": {
                         "questionId": "username",
                         "textAnswers": {"answers": [{"value": info.user.username}]}
@@ -346,6 +389,14 @@ class RegistrationResponsesView(APIView):
                     "lastSubmittedTime": {
                         "questionId": "lastSubmittedTime",
                         "textAnswers": {"answers": [{"value": info.user.date_joined}]}
+                    },
+                    "yearOfBirth": {
+                        "questionId": "yearOfBirth",
+                        "textAnswers": {"answers": [{"value": info.user.profile.year_of_birth}]}
+                    },
+                    "gender": {
+                        "questionId": "gender",
+                        "textAnswers": {"answers": [{"value": info.user.profile.gender_display}]}
                     },
                     "preferred_language": {
                         "questionId": "preferred_language",
@@ -420,6 +471,10 @@ class UserRegistrationView(APIView):
         return [{
             "responseId": str(info.pk),
             "answers": {
+                "name": {
+                    "questionId": "name",
+                    "textAnswers": {"answers": [{"value": info.user.profile.name}]}
+                },
                 "username": {
                     "questionId": "username",
                     "textAnswers": {"answers": [{"value": info.user.username}]}
@@ -431,6 +486,14 @@ class UserRegistrationView(APIView):
                 "lastSubmittedTime": {
                     "questionId": "lastSubmittedTime",
                     "textAnswers": {"answers": [{"value": info.user.date_joined}]}
+                },
+                "yearOfBirth": {
+                    "questionId": "yearOfBirth",
+                    "textAnswers": {"answers": [{"value": info.user.profile.year_of_birth}]}
+                },
+                "gender": {
+                    "questionId": "gender",
+                    "textAnswers": {"answers": [{"value": info.user.profile.gender_display}]}
                 },
                 "preferred_language": {
                     "questionId": "preferred_language",
