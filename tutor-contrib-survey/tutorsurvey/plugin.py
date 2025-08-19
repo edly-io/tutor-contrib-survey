@@ -113,7 +113,24 @@ PLUGIN_SLOTS.add_item(
             widget: {
                 id: 'custom_header',
                 type: DIRECT_PLUGIN,
-                RenderWidget: () => <CenteredPopup />
+                RenderWidget: () => <DataMFELink />,
+            }
+        }
+    """,
+    )
+)
+
+PLUGIN_SLOTS.add_item(
+    (
+        "learner-dashboard",
+        "desktop_main_menu_slot",
+        """
+        {
+            op: PLUGIN_OPERATIONS.Insert,
+            widget: {
+                id: 'second_header',
+                type: DIRECT_PLUGIN,
+                RenderWidget: () => <CenteredPopup />,
             }
         }
     """,

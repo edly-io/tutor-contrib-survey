@@ -1,6 +1,6 @@
 // Only define them if not already declared
-if (typeof useState === 'undefined' || typeof useEffect === 'undefined') {
-  const react = await import('react');
+if (typeof useState === "undefined" || typeof useEffect === "undefined") {
+  const react = await import("react");
   globalThis.useState = react.useState;
   globalThis.useEffect = react.useEffect;
 }
@@ -11,54 +11,54 @@ const { getAuthenticatedHttpClient } = await import(
 
 const modalStyles = {
   overlayStyles: {
-    position: 'fixed',
+    position: "fixed",
     top: 0,
     left: 0,
-    width: '100vw',
-    height: '100vh',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100vw",
+    height: "100vh",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 1000,
   },
   containerStyles: {
-    width: '90vw',
-    height: '90vh',
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '20px',
-    overflow: 'hidden',
+    width: "90vw",
+    height: "90vh",
+    backgroundColor: "#fff",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    position: "relative",
+    display: "flex",
+    flexDirection: "column",
+    padding: "20px",
+    overflow: "hidden",
   },
   contentStyles: {
     flex: 1,
-    overflowY: 'auto',
+    overflowY: "auto",
   },
   closeButton: {
-    position: 'absolute',
-    top: '16px',
-    right: '16px',
-    backgroundColor: '#BE3712',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '8px 12px',
-    cursor: 'pointer',
-    fontSize: '14px',
+    position: "absolute",
+    top: "16px",
+    right: "16px",
+    backgroundColor: "#BE3712",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    fontSize: "14px",
   },
   warning: {
-    position: 'absolute',
-    top: '60px',
-    right: '16px',
-    color: '#ff9781 ',
-    fontSize: '12px',
-    width: '15%',
-    textAlign: 'right', 
-  }
+    position: "absolute",
+    top: "60px",
+    right: "16px",
+    color: "#ff9781 ",
+    fontSize: "12px",
+    width: "15%",
+    textAlign: "right",
+  },
 };
 
 const spinnerStyles = {
@@ -81,19 +81,19 @@ const spinnerStyles = {
 const getCookieValue = (name) => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-}
+  if (parts.length === 2) return parts.pop().split(";").shift();
+};
 
 const isPreferedEnglish = () => {
-  const languagePreference = getCookieValue('openedx-language-preference');
-  return languagePreference === 'en';
-}
+  const languagePreference = getCookieValue("openedx-language-preference");
+  return languagePreference === "en";
+};
 
 const CenteredPopup = () => {
   const [status, setStatus] = useState(false);
   const [loading, setLoading] = useState(true);
   const [count, setCount] = useState(0);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [showSpinner, setShowSpinner] = useState(false);
 
   const STATUS = {
@@ -101,7 +101,7 @@ const CenteredPopup = () => {
     must_show: "must_show",
     dont_show: "dont_show",
   };
-  
+
   const apiUrl = `${getConfig().LMS_BASE_URL}/api/`;
 
   const handleOnSkip = () => {
@@ -127,15 +127,12 @@ const CenteredPopup = () => {
 
     const timer = setTimeout(fetchStatus, 2000);
     return () => clearTimeout(timer);
-  }
-
+  };
 
   const handleOnLoad = () => {
     const updateFormLoaded = async () => {
       try {
-        await getAuthenticatedHttpClient().post(
-          apiUrl + "status/"
-        );
+        await getAuthenticatedHttpClient().post(apiUrl + "status/");
       } catch (error) {
         console.log(error);
       }
@@ -147,9 +144,15 @@ const CenteredPopup = () => {
   const warningText = () => {
     let text = "";
     if (count >= 2) {
-      text = isPreferedEnglish() ? "You must submit this form now then press the Close button to close it." : "Vous devez soumettre ce formulaire maintenant, puis appuyer sur le bouton Fermer pour le fermer.";
+      text = isPreferedEnglish()
+        ? "You must submit this form now then press the Close button to close it."
+        : "Vous devez soumettre ce formulaire maintenant, puis appuyer sur le bouton Fermer pour le fermer.";
     } else {
-      text = isPreferedEnglish() ? `You can skip filling this form ${2 - count} more time(s)` : `Vous pouvez ignorer le remplissage de ce formulaire ${2 - count} fois de plus`;
+      text = isPreferedEnglish()
+        ? `You can skip filling this form ${2 - count} more time(s)`
+        : `Vous pouvez ignorer le remplissage de ce formulaire ${
+            2 - count
+          } fois de plus`;
     }
     return text;
   };
@@ -175,7 +178,7 @@ const CenteredPopup = () => {
 
   if (loading || status === STATUS.dont_show) return <></>;
 
-  return ( 
+  return (
     <div style={modalStyles.overlayStyles}>
       <style>
         {`
@@ -187,15 +190,22 @@ const CenteredPopup = () => {
       </style>
       <div style={modalStyles.containerStyles}>
         <div style={modalStyles.closeButton} onClick={handleOnSkip}>
-          {!showSpinner ? <>{isPreferedEnglish() ? "Close" : "Fermer"}</> : <div style={spinnerStyles.spinner}></div>}
+          {!showSpinner ? (
+            <>{isPreferedEnglish() ? "Close" : "Fermer"}</>
+          ) : (
+            <div style={spinnerStyles.spinner}></div>
+          )}
         </div>
-        <div style={modalStyles.warning}>
-            {warningText()}
-        </div>
+        <div style={modalStyles.warning}>{warningText()}</div>
         <iframe
-          src={isPreferedEnglish() 
-            ? `https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_1 }}/viewform?embedded=true&usp=pp_url&entry.405262843=${encodeURIComponent(email)}` 
-            : `https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_2 }}/viewform?embedded=true&usp=pp_url&entry.405262843=${encodeURIComponent(email)}`
+          src={
+            isPreferedEnglish()
+              ? `https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_1 }}/viewform?embedded=true&usp=pp_url&entry.405262843=${encodeURIComponent(
+                  email
+                )}`
+              : `https://docs.google.com/forms/d/e/{{ SURVEY_FORM_ID_2 }}/viewform?embedded=true&usp=pp_url&entry.405262843=${encodeURIComponent(
+                  email
+                )}`
           }
           width="100%"
           height="1000px"
@@ -209,7 +219,35 @@ const CenteredPopup = () => {
         </iframe>
       </div>
     </div>
-    )
+  );
 };
 
-
+const DataMFELink = () => {
+  const [isAllowed, setIsAllowed] = useState(false);
+  const apiUrl = `${getConfig().LMS_BASE_URL}/api/`;
+  const SURVEY_MFE_URL = `https://${getConfig().BASE_URL}/survey/`;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const responses = await getAuthenticatedHttpClient().get(
+          apiUrl + "allowed/"
+        );
+        setIsAllowed(responses.data.is_allowed);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchData();
+  }, []);
+  return (
+    <>
+      {isAllowed ? (
+        <a className="nav-link" href={SURVEY_MFE_URL}>
+          DATA MFE
+        </a>
+      ) : (
+        <></>
+      )}
+    </>
+  );
+};
